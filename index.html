@@ -1,0 +1,24 @@
+const SHEET_ID = '1d6G0vB_RUL_KOL3uq7FcbW7UUvzGIAZMwOXkXsqwzkA';
+
+function sheet_() {
+  const s = SpreadsheetApp.openById(SHEET_ID).getSheets()[0];
+  if (s.getLastRow() === 0) s.appendRow(['Time', 'Name', 'Wishes']);
+  return s;
+}
+function safe_(v) { return /^[=+\-@]/.test(v) ? "'" + v : v; }
+function out_(o) {
+  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
+function doPost(e) {
+  const d = JSON.parse(e.postData.contents);
+  const name = String(d.name || '').trim().slice(0, 60);
+  const wish = String(d.wish || '').trim().slice(0, 500);
+  if (!name || !wish) return out_({ ok: false });
+  sheet_().appendRow([new Date(), safe_(name), safe_(wish)]);
+  return out_({ ok: true });
+}
+function doGet() {
+  const rows = sheet_().getDataRange().getValues().slice(1)
+    .map(r => ({ t: new Date(r[0]).getTime(), n: r[1], m: r[2] }));
+  return out_(rows);
+}
